@@ -1,5 +1,8 @@
 # Sleep Token 3D Chess (Multiplayer)
 
+**Live:** https://sleep-token-3d-chess.netlify.app  
+**Repo:** https://github.com/dduerinckx/sleep-token-3d-chess
+
 Atmospheric 3D chess in the Sleep Token aesthetic — play solo or summon an opponent online via ritual room codes.
 
 ## Features
