@@ -8,6 +8,7 @@ import { createSleepTokenBoardTexture } from "../theme/textures";
 
 const BOARD_SIZE = 8;
 const SQUARE_SIZE = 1;
+const PIECE_Y = 0.1;
 const CLICK_THRESHOLD = 8;
 
 type PieceMesh = {
@@ -215,55 +216,75 @@ export class ChessScene {
     }
   }
 
+  private clearAllPieces(): void {
+    for (const piece of this.pieces.values()) {
+      this.piecesGroup.remove(piece.mesh);
+    }
+    this.pieces.clear();
+  }
+
   private syncPieces(animate: boolean): void {
     if (!this.engine || !this.assets) return;
 
     const board = this.parseBoard(this.engine.fen);
-    const lastMove = animate ? this.engine.getLastMove() : null;
+
+    if (!animate) {
+      this.clearAllPieces();
+      for (const [square, data] of board) {
+        const mesh = this.assets.createPiece(data.type, data.color);
+        mesh.userData.square = square;
+        const { x, z } = this.squareToWorld(square);
+        mesh.position.set(x, PIECE_Y, z);
+        this.piecesGroup.add(mesh);
+        this.pieces.set(square, { mesh, square, color: data.color, type: data.type });
+      }
+      return;
+    }
+
+    const lastMove = this.engine.getLastMove();
     const moveFrom = lastMove?.from as Square | undefined;
     const moveTo = lastMove?.to as Square | undefined;
     const nextPieces = new Map<Square, PieceMesh>();
-    const seen = new Set<Square>();
 
     for (const [square, data] of board) {
-      seen.add(square);
-      const kept = this.pieces.get(square);
-      if (kept && kept.color === data.color && kept.type === data.type) {
-        nextPieces.set(square, kept);
+      const existing = this.pieces.get(square);
+      if (existing && existing.color === data.color && existing.type === data.type) {
+        nextPieces.set(square, existing);
         continue;
       }
 
-      let mesh: THREE.Group;
+      let mesh: THREE.Group | null = null;
       let reused = false;
 
-      if (square === moveTo && moveFrom && this.pieces.has(moveFrom) && !lastMove?.promotion) {
-        const moving = this.pieces.get(moveFrom)!;
-        mesh = moving.mesh;
-        reused = true;
-        moving.square = square;
-        moving.color = data.color;
-        moving.type = data.type;
-        mesh.userData.square = square;
-      } else {
-        if (square === moveTo && moveFrom && this.pieces.has(moveFrom)) {
-          this.piecesGroup.remove(this.pieces.get(moveFrom)!.mesh);
-          this.pieces.delete(moveFrom);
+      if (square === moveTo && moveFrom && !lastMove?.promotion) {
+        const fromPiece = this.pieces.get(moveFrom);
+        if (fromPiece) {
+          mesh = fromPiece.mesh;
+          reused = true;
+          mesh.userData.square = square;
         }
+      }
+
+      if (!mesh) {
         mesh = this.assets.createPiece(data.type, data.color);
         mesh.userData.square = square;
         this.piecesGroup.add(mesh);
       }
 
       const { x, z } = this.squareToWorld(square);
-      if (reused && animate) this.tweenTo(mesh, x, z);
-      else mesh.position.set(x, 0, z);
+      if (reused) this.tweenTo(mesh, x, z);
+      else mesh.position.set(x, PIECE_Y, z);
 
       nextPieces.set(square, { mesh, square, color: data.color, type: data.type });
     }
 
-    for (const [square, piece] of this.pieces) {
-      if (!seen.has(square) && !nextPieces.has(square)) this.piecesGroup.remove(piece.mesh);
+    const activeMeshes = new Set([...nextPieces.values()].map((p) => p.mesh));
+    for (const piece of this.pieces.values()) {
+      if (!activeMeshes.has(piece.mesh)) {
+        this.piecesGroup.remove(piece.mesh);
+      }
     }
+
     this.pieces = nextPieces;
   }
 
@@ -278,7 +299,7 @@ export class ChessScene {
       mesh.position.z = start.pz + (z - start.pz) * ease;
       mesh.position.y = Math.sin(t * Math.PI) * 0.28;
       if (t < 1) requestAnimationFrame(step);
-      else mesh.position.set(x, 0, z);
+      else mesh.position.set(x, PIECE_Y, z);
     };
     requestAnimationFrame(step);
   }
@@ -406,13 +427,19 @@ export class ChessScene {
     this.renderHighlights(square);
   }
 
+  private clearHighlightMeshes(): void {
+    while (this.highlightsGroup.children.length > 0) {
+      this.highlightsGroup.remove(this.highlightsGroup.children[0]);
+    }
+  }
+
   private clearSelection(): void {
     this.selected = null;
-    this.highlightsGroup.clear();
+    this.clearHighlightMeshes();
   }
 
   private renderHighlights(square: Square): void {
-    this.highlightsGroup.clear();
+    this.clearHighlightMeshes();
     if (!this.engine) return;
 
     const ring = new THREE.Mesh(

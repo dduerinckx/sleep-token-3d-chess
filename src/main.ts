@@ -221,8 +221,8 @@ function applyMove(
   const fenBefore = engine.getFenSnapshot();
   const movingColor = moverColor ?? engine.turn;
 
-  if (mode === "host" || mode === "guest") {
-    if (playerColor && movingColor !== playerColor && broadcast) return false;
+  if ((mode === "host" || mode === "guest") && broadcast) {
+    if (playerColor && movingColor !== playerColor) return false;
   }
 
   const move = engine.makeMove(from, to, promotion);
@@ -263,6 +263,7 @@ function maybeComputerMove(): void {
 }
 
 function handleMoveRequest(req: MoveRequest): void {
+  if (gameFinalized) return;
   if (mode !== "solo" && playerColor !== engine.turn) return;
 
   if (req.needsPromotion) {
