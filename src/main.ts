@@ -4,13 +4,14 @@ import { MultiplayerSession, type NetMessage, type PlayerColor } from "./game/Mu
 import { analyzeMove, analyzeIllegalAttempt, type MoveQuality } from "./game/MoveAnalyzer";
 import { StatsTracker, type CareerStats } from "./game/StatsTracker";
 import type { SessionMoveStats } from "./game/MoveAnalyzer";
+import { pickComputerMove } from "./game/ChessAI";
 import { ChessScene, type MoveRequest } from "./three/ChessScene";
 import { PLAYERS } from "./theme/players";
 import { PROMOTION_LORE } from "./theme/pieceLore";
 import type { Color, Square } from "chess.js";
 import { AudioManager } from "./audio/AudioManager";
 
-type PlayMode = "host" | "guest";
+type PlayMode = "host" | "guest" | "solo";
 
 const engine = new ChessEngine();
 const stats = new StatsTracker();
@@ -32,24 +33,27 @@ const turnLabel = document.getElementById("turn-label")!;
 const statusLabel = document.getElementById("status-label")!;
 const chipKimberly = document.getElementById("chip-kimberly")!;
 const chipDorian = document.getElementById("chip-dorian")!;
+const rematchBtn = document.getElementById("btn-rematch")!;
+const rematchWait = document.getElementById("rematch-wait")!;
 
 let mode: PlayMode | null = null;
 let playerColor: PlayerColor | null = null;
 let pendingPromotion: { from: Square; to: Square } | null = null;
 let gameFinalized = false;
+let computerThinking = false;
 
 const mp = new MultiplayerSession({
   onWaiting: (code) => {
     roomDisplay.classList.remove("hidden");
     roomCodeEl.textContent = code;
-    setLobbyStatus("Chamber open — send the ritual code to Dorian.");
+    setLobbyStatus("Chamber open — send the ritual code to Kimberly.");
   },
   onConnected: (color) => {
     if (mp.role === "host") {
       startGame("host", color);
       mp.send({ type: "sync", fen: engine.fen });
     }
-    setLobbyStatus("Dorian has entered the chamber.");
+    setLobbyStatus("Kimberly has entered the chamber.");
   },
   onDisconnected: () => {
     setStatus("The veil tore — connection lost.");
@@ -65,6 +69,27 @@ function setLobbyStatus(text: string): void {
 
 function setStatus(text: string): void {
   statusLabel.textContent = text;
+}
+
+function isDorianInitiator(): boolean {
+  return mode === "host" || mode === "solo";
+}
+
+function updateRematchUI(): void {
+  if (mode === "solo") {
+    rematchBtn.textContent = "Play Again";
+    rematchBtn.classList.remove("hidden");
+    rematchWait.classList.add("hidden");
+    return;
+  }
+  if (mode === "host") {
+    rematchBtn.textContent = "New Game (Dorian)";
+    rematchBtn.classList.remove("hidden");
+    rematchWait.classList.add("hidden");
+    return;
+  }
+  rematchBtn.classList.add("hidden");
+  rematchWait.classList.toggle("hidden", mode !== "guest");
 }
 
 async function renderCareerPreview(): Promise<void> {
@@ -100,7 +125,8 @@ function formatCareerStats(c: CareerStats): string {
 function updateHud(): void {
   const state = engine.getState();
   const active = state.turn === "w" ? PLAYERS.kimberly : PLAYERS.dorian;
-  turnLabel.textContent = `${active.name}'s move`;
+  const vsComputer = mode === "solo" ? " · vs Ritual Engine" : "";
+  turnLabel.textContent = `${active.name}'s move${vsComputer}`;
 
   chipKimberly.classList.toggle("active", state.turn === "w" && !state.isGameOver);
   chipDorian.classList.toggle("active", state.turn === "b" && !state.isGameOver);
@@ -121,8 +147,9 @@ function updateHud(): void {
     setStatus("");
   }
 
-  const myTurn = mode && playerColor === state.turn;
-  scene.setInteraction(!!myTurn && !state.isGameOver);
+  const myTurn =
+    mode === "solo" ? playerColor === state.turn : mode !== null && playerColor === state.turn;
+  scene.setInteraction(!!myTurn && !state.isGameOver && !computerThinking);
 }
 
 async function maybeEndGame(): Promise<void> {
@@ -143,6 +170,7 @@ async function maybeEndGame(): Promise<void> {
   document.getElementById("stats-kimberly-career")!.innerHTML = formatCareerStats(careers.kimberly);
   document.getElementById("stats-dorian-career")!.innerHTML = formatCareerStats(careers.dorian);
   statsModal.classList.remove("hidden");
+  updateRematchUI();
   void renderCareerPreview();
 }
 
@@ -150,6 +178,7 @@ function startGame(playMode: PlayMode, color: PlayerColor): void {
   mode = playMode;
   playerColor = color;
   gameFinalized = false;
+  computerThinking = false;
   stats.resetSession();
   engine.reset();
   scene.bindEngine(engine);
@@ -158,6 +187,7 @@ function startGame(playMode: PlayMode, color: PlayerColor): void {
   hud.classList.remove("hidden");
   statsModal.classList.add("hidden");
   updateHud();
+  if (playMode === "solo" && color === "b") maybeComputerMove();
 }
 
 function leaveGame(): void {
@@ -165,6 +195,7 @@ function leaveGame(): void {
   mode = null;
   playerColor = null;
   gameFinalized = false;
+  computerThinking = false;
   engine.reset();
   scene.bindEngine(engine);
   scene.setOrientation("w");
@@ -172,18 +203,27 @@ function leaveGame(): void {
   statsModal.classList.add("hidden");
   lobby.classList.remove("hidden");
   roomDisplay.classList.add("hidden");
-  setLobbyStatus("Kimberly hosts. Dorian joins with the ritual code.");
-  renderCareerPreview();
+  setLobbyStatus("Dorian initiates. Kimberly joins with the ritual code.");
+  void renderCareerPreview();
 }
 
 function recordQualityForMove(color: Color, quality: MoveQuality): void {
   stats.recordMove(color, quality);
 }
 
-function applyMove(from: Square, to: Square, promotion = "q", broadcast = true, moverColor?: Color): boolean {
+function applyMove(
+  from: Square,
+  to: Square,
+  promotion = "q",
+  broadcast = true,
+  moverColor?: Color
+): boolean {
   const fenBefore = engine.getFenSnapshot();
   const movingColor = moverColor ?? engine.turn;
-  if (mode && playerColor && movingColor !== playerColor && broadcast) return false;
+
+  if (mode === "host" || mode === "guest") {
+    if (playerColor && movingColor !== playerColor && broadcast) return false;
+  }
 
   const move = engine.makeMove(from, to, promotion);
   if (!move) return false;
@@ -197,13 +237,34 @@ function applyMove(from: Square, to: Square, promotion = "q", broadcast = true, 
   scene.syncFromEngine(true);
   updateHud();
 
-  if (broadcast && mode) {
+  if (broadcast && (mode === "host" || mode === "guest")) {
     mp.send({ type: "move", from, to, promotion });
   }
+
+  if (mode === "solo" && !state.isGameOver) maybeComputerMove();
   return true;
 }
 
+function maybeComputerMove(): void {
+  if (mode !== "solo" || gameFinalized || computerThinking) return;
+  if (engine.turn === playerColor) return;
+
+  const pick = pickComputerMove(engine.fen);
+  if (!pick) return;
+
+  computerThinking = true;
+  scene.setInteraction(false);
+
+  window.setTimeout(() => {
+    computerThinking = false;
+    if (mode !== "solo" || gameFinalized) return;
+    applyMove(pick.from, pick.to, pick.promotion ?? "q", false);
+  }, 500);
+}
+
 function handleMoveRequest(req: MoveRequest): void {
+  if (mode !== "solo" && playerColor !== engine.turn) return;
+
   if (req.needsPromotion) {
     pendingPromotion = { from: req.from, to: req.to };
     const side = engine.turn === "w" ? "white" : "black";
@@ -229,6 +290,7 @@ function handleNetMessage(msg: NetMessage): void {
     scene.bindEngine(engine);
     statsModal.classList.add("hidden");
     updateHud();
+    if (msg.type === "rematch" && mode === "guest") setStatus("Dorian has begun a new ritual.");
     return;
   }
 
@@ -250,12 +312,23 @@ function handleNetMessage(msg: NetMessage): void {
 
 scene.setMoveHandler(handleMoveRequest);
 scene.setBadAttemptHandler(() => {
-  if (playerColor) recordQualityForMove(playerColor, analyzeIllegalAttempt());
+  if (playerColor && (mode === "solo" || engine.turn === playerColor)) {
+    recordQualityForMove(playerColor, analyzeIllegalAttempt());
+  }
+});
+
+document.querySelectorAll(".tab").forEach((tab) => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+    document.querySelectorAll(".tab-panel").forEach((p) => p.classList.remove("active"));
+    tab.classList.add("active");
+    document.getElementById(`tab-${tab.getAttribute("data-tab")}`)?.classList.add("active");
+  });
 });
 
 document.getElementById("btn-host")!.addEventListener("click", async () => {
   audio.startAmbient();
-  setLobbyStatus("Kimberly opens the summoning chamber…");
+  setLobbyStatus("Dorian opens the summoning chamber…");
   try {
     await mp.host();
   } catch {
@@ -267,34 +340,46 @@ document.getElementById("btn-join")!.addEventListener("click", async () => {
   audio.startAmbient();
   const code = (document.getElementById("join-code") as HTMLInputElement).value.trim().toUpperCase();
   if (!code) {
-    setLobbyStatus("Dorian must enter a ritual code.");
+    setLobbyStatus("Kimberly must enter Dorian's ritual code.");
     return;
   }
-  setLobbyStatus("Dorian crosses the veil…");
+  setLobbyStatus("Kimberly crosses the veil…");
   try {
     await mp.join(code);
-    startGame("guest", "b");
+    startGame("guest", "w");
   } catch {
-    setLobbyStatus("Could not enter — verify the code with Kimberly.");
+    setLobbyStatus("Could not enter — verify the code with Dorian.");
   }
+});
+
+document.getElementById("btn-solo-kimberly")!.addEventListener("click", () => {
+  audio.startAmbient();
+  startGame("solo", "w");
+});
+
+document.getElementById("btn-solo-dorian")!.addEventListener("click", () => {
+  audio.startAmbient();
+  startGame("solo", "b");
 });
 
 document.getElementById("btn-copy")!.addEventListener("click", async () => {
   await navigator.clipboard.writeText(roomCodeEl.textContent ?? "");
-  setLobbyStatus("Ritual code copied for Dorian.");
+  setLobbyStatus("Ritual code copied for Kimberly.");
 });
 
 document.getElementById("btn-flip")!.addEventListener("click", () => scene.flipBoard());
 document.getElementById("btn-leave")!.addEventListener("click", () => leaveGame());
 
-document.getElementById("btn-rematch")!.addEventListener("click", () => {
+rematchBtn.addEventListener("click", () => {
+  if (!isDorianInitiator()) return;
   gameFinalized = false;
   stats.resetSession();
   engine.reset();
   scene.bindEngine(engine);
   statsModal.classList.add("hidden");
-  if (mode) mp.send({ type: "rematch" });
+  if (mode === "host") mp.send({ type: "rematch" });
   updateHud();
+  if (mode === "solo" && playerColor === "b") maybeComputerMove();
 });
 
 document.getElementById("btn-stats-close")!.addEventListener("click", () => leaveGame());

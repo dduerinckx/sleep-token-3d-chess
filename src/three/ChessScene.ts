@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import type { Color, Square } from "chess.js";
 import type { ChessEngine } from "../game/ChessEngine";
-import { loadChessAssets, type LoadedChessAssets } from "./ChessModelLoader";
+import { createLocalChessAssets, type LoadedChessAssets } from "./ChessModelLoader";
 import { SleepTokenEnvironment } from "./Environment";
 import { createSleepTokenBoardTexture } from "../theme/textures";
 
@@ -86,22 +86,18 @@ export class ChessScene {
 
     this.onResize();
     this.animate();
-    void this.initAssets();
+    this.initAssets();
   }
 
   setReadyHandler(handler: () => void): void {
     this.onReady = handler;
   }
 
-  private async initAssets(): Promise<void> {
-    try {
-      this.assets = await loadChessAssets();
-      this.buildBoard();
-      if (this.engine) this.syncPieces(false);
-      this.onReady?.();
-    } catch (err) {
-      console.error("Failed to load chess assets", err);
-    }
+  private initAssets(): void {
+    this.assets = createLocalChessAssets();
+    this.buildBoard();
+    if (this.engine) this.syncPieces(false);
+    this.onReady?.();
   }
 
   bindEngine(engine: ChessEngine): void {

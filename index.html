@@ -16,9 +16,9 @@
     <div id="app">
       <canvas id="game-canvas"></canvas>
 
-      <div id="loading" class="loading">
+      <div id="loading" class="loading hidden">
         <p class="eyebrow">Summoning the chamber</p>
-        <h2>Loading ritual assets…</h2>
+        <h2 id="loading-text">Preparing the ritual…</h2>
         <div class="loading-bar"><span></span></div>
       </div>
 
@@ -26,34 +26,48 @@
         <div class="panel-inner wide">
           <p class="eyebrow">Even in Arcadia, there exis—</p>
           <h1>Sleep Token</h1>
-          <h2>Ritual Chess · Online Duel</h2>
+          <h2>Ritual Chess</h2>
           <p class="subtitle">
-            Kimberly summons from <em>The Summoning</em>. Dorian rises from <em>Back to Eden</em>. Two souls. One board.
+            Dorian opens the chamber. Kimberly answers the call. Or face the void alone.
           </p>
 
-          <div class="player-cards">
-            <article class="player-card kimberly">
-              <span class="realm">The Summoning</span>
-              <h3>Kimberly</h3>
-              <p>Pale court · ritual gold · White</p>
-              <button type="button" id="btn-host" class="btn primary full">Summon Chamber (Host)</button>
-            </article>
-            <article class="player-card dorian">
-              <span class="realm">Back to Eden</span>
-              <h3>Dorian</h3>
-              <p>Overgrown throne · crimson vine · Black</p>
-              <div class="join-row">
-                <input id="join-code" type="text" placeholder="RITUAL CODE" maxlength="12" autocomplete="off" />
-                <button type="button" id="btn-join" class="btn primary">Enter</button>
-              </div>
-            </article>
+          <div class="mode-tabs">
+            <button type="button" class="tab active" data-tab="multi">Multiplayer</button>
+            <button type="button" class="tab" data-tab="solo">Solo vs Computer</button>
           </div>
 
-          <p id="lobby-status" class="status">Kimberly hosts. Dorian joins with the ritual code.</p>
-          <div id="room-display" class="room-display hidden">
-            <span class="label">Ritual Code — share with Dorian</span>
-            <code id="room-code"></code>
-            <button type="button" id="btn-copy" class="btn ghost">Copy Code</button>
+          <div id="tab-multi" class="tab-panel active">
+            <div class="player-cards">
+              <article class="player-card kimberly">
+                <span class="realm">The Summoning</span>
+                <h3>Kimberly</h3>
+                <p>Pale court · ritual gold · White</p>
+                <div class="join-row">
+                  <input id="join-code" type="text" placeholder="RITUAL CODE" maxlength="12" autocomplete="off" />
+                  <button type="button" id="btn-join" class="btn primary">Enter Chamber</button>
+                </div>
+              </article>
+              <article class="player-card dorian">
+                <span class="realm">Back to Eden</span>
+                <h3>Dorian</h3>
+                <p>Overgrown throne · crimson vine · Black · Host</p>
+                <button type="button" id="btn-host" class="btn primary full">Open New Game (Host)</button>
+              </article>
+            </div>
+            <p id="lobby-status" class="status">Dorian initiates. Kimberly joins with the ritual code.</p>
+            <div id="room-display" class="room-display hidden">
+              <span class="label">Ritual Code — share with Kimberly</span>
+              <code id="room-code"></code>
+              <button type="button" id="btn-copy" class="btn ghost">Copy Code</button>
+            </div>
+          </div>
+
+          <div id="tab-solo" class="tab-panel">
+            <p class="hint">Battle the ritual engine. Pick your soul.</p>
+            <div class="solo-picks">
+              <button type="button" id="btn-solo-kimberly" class="btn primary full">Play as Kimberly (White)</button>
+              <button type="button" id="btn-solo-dorian" class="btn full">Play as Dorian (Black)</button>
+            </div>
           </div>
 
           <div class="career-preview">
@@ -130,7 +144,8 @@
           </div>
 
           <div class="stats-actions">
-            <button type="button" id="btn-rematch" class="btn primary">Rematch</button>
+            <button type="button" id="btn-rematch" class="btn primary hidden">New Game (Dorian)</button>
+            <p id="rematch-wait" class="hint hidden">Waiting for Dorian to begin a new game…</p>
             <button type="button" id="btn-stats-close" class="btn ghost">Return to Lobby</button>
           </div>
         </div>

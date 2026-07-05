@@ -43,7 +43,7 @@ export class MultiplayerSession {
   async host(): Promise<string> {
     this.cleanup();
     this.role = "host";
-    this.color = "w";
+    this.color = "b";
     this.roomCode = `ST-${randomCode()}`;
 
     return new Promise((resolve, reject) => {
@@ -56,7 +56,7 @@ export class MultiplayerSession {
 
       this.peer.on("connection", (connection) => {
         this.attachConnection(connection);
-        this.events.onConnected?.("w");
+        this.events.onConnected?.("b");
       });
 
       this.peer.on("error", (err) => {
@@ -70,7 +70,7 @@ export class MultiplayerSession {
   async join(code: string): Promise<void> {
     this.cleanup();
     this.role = "guest";
-    this.color = "b";
+    this.color = "w";
     this.roomCode = code.trim().toUpperCase();
 
     const guestId = `${this.roomCode}-guest-${Date.now()}`;
@@ -83,7 +83,7 @@ export class MultiplayerSession {
         this.attachConnection(connection);
 
         connection.on("open", () => {
-          this.events.onConnected?.("b");
+          this.events.onConnected?.("w");
           resolve();
         });
 
