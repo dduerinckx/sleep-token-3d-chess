@@ -4,11 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sleep Token — 3D Chess</title>
+    <title>Sleep Token — Ritual Chess</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap"
       rel="stylesheet"
     />
   </head>
@@ -17,63 +17,111 @@
       <canvas id="game-canvas"></canvas>
 
       <div id="lobby" class="panel">
-        <div class="panel-inner">
+        <div class="panel-inner wide">
           <p class="eyebrow">Even in Arcadia, there exis—</p>
           <h1>Sleep Token</h1>
-          <h2>3D Chess · Multiplayer</h2>
-          <p class="subtitle">Summon an opponent across the void. Host a chamber or enter a ritual code.</p>
+          <h2>Ritual Chess · Online Duel</h2>
+          <p class="subtitle">
+            Kimberly summons from <em>The Summoning</em>. Dorian rises from <em>Back to Eden</em>. Two souls. One board.
+          </p>
 
-          <div class="mode-tabs">
-            <button type="button" class="tab active" data-tab="multi">Multiplayer</button>
-            <button type="button" class="tab" data-tab="solo">Solo</button>
-          </div>
-
-          <div id="tab-multi" class="tab-panel active">
-            <div class="actions">
-              <button type="button" id="btn-host" class="btn primary">Create Game</button>
+          <div class="player-cards">
+            <article class="player-card kimberly">
+              <span class="realm">The Summoning</span>
+              <h3>Kimberly</h3>
+              <p>Pale court · ritual gold · White</p>
+              <button type="button" id="btn-host" class="btn primary full">Summon Chamber (Host)</button>
+            </article>
+            <article class="player-card dorian">
+              <span class="realm">Back to Eden</span>
+              <h3>Dorian</h3>
+              <p>Overgrown throne · crimson vine · Black</p>
               <div class="join-row">
-                <input id="join-code" type="text" placeholder="RITUAL CODE" maxlength="8" autocomplete="off" />
-                <button type="button" id="btn-join" class="btn">Join</button>
+                <input id="join-code" type="text" placeholder="RITUAL CODE" maxlength="12" autocomplete="off" />
+                <button type="button" id="btn-join" class="btn primary">Enter</button>
               </div>
-            </div>
-            <p id="lobby-status" class="status">Choose your path.</p>
-            <div id="room-display" class="room-display hidden">
-              <span class="label">Ritual Code</span>
-              <code id="room-code"></code>
-              <button type="button" id="btn-copy" class="btn ghost">Copy</button>
-            </div>
+            </article>
           </div>
 
-          <div id="tab-solo" class="tab-panel">
-            <button type="button" id="btn-solo" class="btn primary full">Play Solo</button>
-            <p class="hint">Local hot-seat — both sides on one device.</p>
+          <p id="lobby-status" class="status">Kimberly hosts. Dorian joins with the ritual code.</p>
+          <div id="room-display" class="room-display hidden">
+            <span class="label">Ritual Code — share with Dorian</span>
+            <code id="room-code"></code>
+            <button type="button" id="btn-copy" class="btn ghost">Copy Code</button>
+          </div>
+
+          <div class="career-preview">
+            <div class="career-col">
+              <span class="career-name">Kimberly</span>
+              <span id="career-kimberly" class="career-line"></span>
+            </div>
+            <div class="career-col">
+              <span class="career-name">Dorian</span>
+              <span id="career-dorian" class="career-line"></span>
+            </div>
           </div>
         </div>
       </div>
 
       <div id="hud" class="hud hidden">
         <div class="hud-left">
-          <span class="brand">Sleep Token Chess</span>
-          <span id="hud-mode" class="pill"></span>
+          <div class="player-chip kimberly" id="chip-kimberly">
+            <span class="chip-name">Kimberly</span>
+            <span class="chip-role">White · Summoning</span>
+          </div>
         </div>
         <div class="hud-center">
           <span id="turn-label" class="turn"></span>
           <span id="status-label" class="status-line"></span>
+          <span id="camera-hint" class="camera-hint">Drag to orbit the board · Scroll to zoom</span>
         </div>
         <div class="hud-right">
-          <button type="button" id="btn-flip" class="btn ghost small">Flip Board</button>
+          <div class="player-chip dorian" id="chip-dorian">
+            <span class="chip-name">Dorian</span>
+            <span class="chip-role">Black · Eden</span>
+          </div>
+          <button type="button" id="btn-flip" class="btn ghost small">Flip</button>
           <button type="button" id="btn-leave" class="btn ghost small">Leave</button>
         </div>
       </div>
 
       <div id="promotion-modal" class="modal hidden">
-        <div class="modal-inner">
-          <p>Choose your ascension</p>
+        <div class="modal-inner wide">
+          <p class="modal-title">Choose your ascension</p>
+          <p id="promo-context" class="modal-sub"></p>
           <div class="promo-picks">
-            <button type="button" data-piece="q">Queen</button>
-            <button type="button" data-piece="r">Rook</button>
-            <button type="button" data-piece="b">Bishop</button>
-            <button type="button" data-piece="n">Knight</button>
+            <button type="button" data-piece="q"><span class="promo-name">Queen</span><span class="promo-lore"></span></button>
+            <button type="button" data-piece="r"><span class="promo-name">Rook</span><span class="promo-lore"></span></button>
+            <button type="button" data-piece="b"><span class="promo-name">Bishop</span><span class="promo-lore"></span></button>
+            <button type="button" data-piece="n"><span class="promo-name">Knight</span><span class="promo-lore"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div id="stats-modal" class="modal hidden">
+        <div class="modal-inner stats-panel">
+          <p class="eyebrow">Ritual Complete</p>
+          <h2 id="stats-title">Ascension Report</h2>
+          <p id="stats-winner" class="stats-winner"></p>
+
+          <div class="stats-grid">
+            <section class="stats-card kimberly">
+              <h3>Kimberly</h3>
+              <div class="stat-rows" id="stats-kimberly-game"></div>
+              <h4>Career</h4>
+              <div class="stat-rows" id="stats-kimberly-career"></div>
+            </section>
+            <section class="stats-card dorian">
+              <h3>Dorian</h3>
+              <div class="stat-rows" id="stats-dorian-game"></div>
+              <h4>Career</h4>
+              <div class="stat-rows" id="stats-dorian-career"></div>
+            </section>
+          </div>
+
+          <div class="stats-actions">
+            <button type="button" id="btn-rematch" class="btn primary">Rematch</button>
+            <button type="button" id="btn-stats-close" class="btn ghost">Return to Lobby</button>
           </div>
         </div>
       </div>

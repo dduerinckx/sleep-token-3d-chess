@@ -58,6 +58,10 @@ body,
   text-align: center;
 }
 
+.panel-inner.wide {
+  width: min(720px, 100%);
+}
+
 .eyebrow {
   font-size: 0.72rem;
   letter-spacing: 0.28em;
@@ -330,6 +334,239 @@ input::placeholder {
   display: none !important;
 }
 
+.subtitle em {
+  color: var(--gold-dim);
+  font-style: normal;
+}
+
+.player-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin: 1.5rem 0 1rem;
+  text-align: left;
+}
+
+.player-card {
+  padding: 1.25rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.28);
+}
+
+.player-card.kimberly {
+  border-color: rgba(201, 169, 98, 0.35);
+  box-shadow: inset 0 0 40px rgba(201, 169, 98, 0.06);
+}
+
+.player-card.dorian {
+  border-color: rgba(90, 130, 80, 0.35);
+  box-shadow: inset 0 0 40px rgba(90, 40, 60, 0.08);
+}
+
+.player-card .realm {
+  font-size: 0.65rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+}
+
+.player-card h3 {
+  font-family: "Cinzel", serif;
+  font-size: 1.35rem;
+  color: var(--gold);
+  margin: 0.35rem 0;
+}
+
+.player-card p {
+  font-size: 0.82rem;
+  color: rgba(232, 224, 244, 0.6);
+  margin-bottom: 1rem;
+  line-height: 1.45;
+}
+
+.career-preview {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  text-align: left;
+}
+
+.career-name {
+  display: block;
+  font-family: "Cinzel", serif;
+  font-size: 0.75rem;
+  letter-spacing: 0.14em;
+  color: var(--gold-dim);
+  margin-bottom: 0.25rem;
+}
+
+.career-line {
+  font-size: 0.78rem;
+  color: rgba(232, 224, 244, 0.55);
+}
+
+.player-chip {
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.player-chip.kimberly {
+  background: rgba(201, 169, 98, 0.08);
+}
+
+.player-chip.dorian {
+  background: rgba(90, 60, 80, 0.15);
+}
+
+.player-chip.active {
+  border-color: var(--gold);
+  box-shadow: 0 0 20px rgba(201, 169, 98, 0.25);
+}
+
+.chip-name {
+  display: block;
+  font-family: "Cinzel", serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.1em;
+  color: var(--gold);
+}
+
+.chip-role {
+  display: block;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(232, 224, 244, 0.5);
+}
+
+.camera-hint {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  color: rgba(232, 224, 244, 0.38);
+}
+
+.modal-inner.wide {
+  width: min(480px, 92vw);
+}
+
+.modal-title {
+  margin-bottom: 0.35rem !important;
+}
+
+.modal-sub {
+  font-family: "Inter", sans-serif !important;
+  font-size: 0.85rem !important;
+  letter-spacing: 0 !important;
+  color: rgba(232, 224, 244, 0.55) !important;
+}
+
+.promo-picks button {
+  display: grid;
+  gap: 0.25rem;
+  text-align: left;
+  padding: 0.85rem 1rem;
+}
+
+.promo-name {
+  font-family: "Cinzel", serif;
+  letter-spacing: 0.1em;
+}
+
+.promo-lore {
+  font-family: "Inter", sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(232, 224, 244, 0.55);
+}
+
+.stats-panel {
+  width: min(720px, 94vw) !important;
+  max-height: 90vh;
+  overflow-y: auto;
+  text-align: center;
+}
+
+.stats-panel h2 {
+  font-family: "Cinzel", serif;
+  color: var(--gold);
+  letter-spacing: 0.14em;
+  margin-bottom: 0.5rem;
+}
+
+.stats-winner {
+  font-size: 0.95rem;
+  color: var(--mist);
+  margin-bottom: 1.25rem !important;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  text-align: left;
+  margin-bottom: 1.25rem;
+}
+
+.stats-card {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.stats-card h3 {
+  font-family: "Cinzel", serif;
+  color: var(--gold);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.stats-card h4 {
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin: 1rem 0 0.5rem;
+}
+
+.stat-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.35rem 0;
+  font-size: 0.82rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.stat-row.killer strong {
+  color: #ffe8a0;
+}
+
+.stat-row.good strong {
+  color: #8fd4a0;
+}
+
+.stat-row.bad strong {
+  color: #c9a0b8;
+}
+
+.stat-row.fuckup strong {
+  color: #e86a8a;
+}
+
+.stats-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
 @media (max-width: 720px) {
   .hud {
     flex-wrap: wrap;
@@ -340,5 +577,11 @@ input::placeholder {
   .hud-right {
     width: 100%;
     justify-content: center;
+  }
+
+  .player-cards,
+  .stats-grid,
+  .career-preview {
+    grid-template-columns: 1fr;
   }
 }

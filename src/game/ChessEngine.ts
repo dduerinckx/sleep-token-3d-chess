@@ -32,6 +32,10 @@ export class ChessEngine {
     return this.chess.fen();
   }
 
+  getFenSnapshot(): string {
+    return this.chess.fen();
+  }
+
   get turn(): Color {
     return this.chess.turn();
   }

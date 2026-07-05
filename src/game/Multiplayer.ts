@@ -5,6 +5,7 @@ export type PlayerColor = "w" | "b";
 export type NetMessage =
   | { type: "sync"; fen: string }
   | { type: "move"; from: string; to: string; promotion?: string }
+  | { type: "rematch" }
   | { type: "chat"; text: string };
 
 export type MultiplayerEvents = {
