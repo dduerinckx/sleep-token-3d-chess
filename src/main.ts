@@ -8,14 +8,18 @@ import { ChessScene, type MoveRequest } from "./three/ChessScene";
 import { PLAYERS } from "./theme/players";
 import { PROMOTION_LORE } from "./theme/pieceLore";
 import type { Color, Square } from "chess.js";
+import { AudioManager } from "./audio/AudioManager";
 
 type PlayMode = "host" | "guest";
 
 const engine = new ChessEngine();
 const stats = new StatsTracker();
+const audio = new AudioManager();
 const canvas = document.getElementById("game-canvas") as HTMLCanvasElement;
+const loading = document.getElementById("loading")!;
 const scene = new ChessScene(canvas);
 scene.bindEngine(engine);
+scene.setReadyHandler(() => loading.classList.add("hidden"));
 
 const lobby = document.getElementById("lobby")!;
 const hud = document.getElementById("hud")!;
@@ -63,9 +67,8 @@ function setStatus(text: string): void {
   statusLabel.textContent = text;
 }
 
-function renderCareerPreview(): void {
-  const k = stats.loadCareer("kimberly");
-  const d = stats.loadCareer("dorian");
+async function renderCareerPreview(): Promise<void> {
+  const [k, d] = await Promise.all([stats.loadCareerCloud("kimberly"), stats.loadCareerCloud("dorian")]);
   document.getElementById("career-kimberly")!.textContent = formatCareerLine(k);
   document.getElementById("career-dorian")!.textContent = formatCareerLine(d);
 }
@@ -105,13 +108,13 @@ function updateHud(): void {
   if (state.isCheckmate) {
     const winner = state.winner === "w" ? "Kimberly" : "Dorian";
     setStatus(`Checkmate — ${winner} ascends.`);
-    maybeEndGame();
+    void maybeEndGame();
   } else if (state.isStalemate) {
     setStatus("Stalemate — the void claims both.");
-    maybeEndGame();
+    void maybeEndGame();
   } else if (state.isDraw) {
     setStatus("Draw — balance in the ritual.");
-    maybeEndGame();
+    void maybeEndGame();
   } else if (state.isCheck) {
     setStatus("Check — the mask tightens.");
   } else {
@@ -122,14 +125,14 @@ function updateHud(): void {
   scene.setInteraction(!!myTurn && !state.isGameOver);
 }
 
-function maybeEndGame(): void {
+async function maybeEndGame(): Promise<void> {
   if (gameFinalized) return;
   const state = engine.getState();
   if (!state.isGameOver) return;
   gameFinalized = true;
   scene.setInteraction(false);
 
-  const careers = stats.finalizeGame(state.winner);
+  const careers = await stats.finalizeGame(state.winner);
   const winnerText = state.winner
     ? `${state.winner === "w" ? "Kimberly" : "Dorian"} claims the ritual.`
     : "Neither soul ascends — a draw in the void.";
@@ -140,7 +143,7 @@ function maybeEndGame(): void {
   document.getElementById("stats-kimberly-career")!.innerHTML = formatCareerStats(careers.kimberly);
   document.getElementById("stats-dorian-career")!.innerHTML = formatCareerStats(careers.dorian);
   statsModal.classList.remove("hidden");
-  renderCareerPreview();
+  void renderCareerPreview();
 }
 
 function startGame(playMode: PlayMode, color: PlayerColor): void {
@@ -188,6 +191,8 @@ function applyMove(from: Square, to: Square, promotion = "q", broadcast = true, 
   const state = engine.getState();
   const quality = analyzeMove(fenBefore, move, state.isCheckmate, state.isCheck);
   recordQualityForMove(movingColor, quality);
+  audio.playMove(!!move.captured);
+  if (state.isCheck) audio.playCheck();
 
   scene.syncFromEngine(true);
   updateHud();
@@ -235,6 +240,8 @@ function handleNetMessage(msg: NetMessage): void {
       const state = engine.getState();
       const quality = analyzeMove(fenBefore, move, state.isCheckmate, state.isCheck);
       recordQualityForMove(turnBefore, quality);
+      audio.playMove(!!move.captured);
+      if (state.isCheck) audio.playCheck();
     }
     scene.syncFromEngine(true);
     updateHud();
@@ -247,6 +254,7 @@ scene.setBadAttemptHandler(() => {
 });
 
 document.getElementById("btn-host")!.addEventListener("click", async () => {
+  audio.startAmbient();
   setLobbyStatus("Kimberly opens the summoning chamber…");
   try {
     await mp.host();
@@ -256,6 +264,7 @@ document.getElementById("btn-host")!.addEventListener("click", async () => {
 });
 
 document.getElementById("btn-join")!.addEventListener("click", async () => {
+  audio.startAmbient();
   const code = (document.getElementById("join-code") as HTMLInputElement).value.trim().toUpperCase();
   if (!code) {
     setLobbyStatus("Dorian must enter a ritual code.");
@@ -299,5 +308,19 @@ promotionModal.querySelectorAll("[data-piece]").forEach((btn) => {
   });
 });
 
-renderCareerPreview();
+void renderCareerPreview();
 updateHud();
+
+const volumeSlider = document.getElementById("volume-slider") as HTMLInputElement;
+const muteBtn = document.getElementById("btn-mute")!;
+
+volumeSlider.addEventListener("input", () => {
+  audio.setVolume(Number(volumeSlider.value) / 100);
+});
+
+muteBtn.addEventListener("click", () => {
+  const next = !audio.isMuted();
+  audio.setMuted(next);
+  muteBtn.textContent = next ? "Unmute" : "Mute";
+  if (!next) audio.startAmbient();
+});

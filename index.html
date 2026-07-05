@@ -16,6 +16,12 @@
     <div id="app">
       <canvas id="game-canvas"></canvas>
 
+      <div id="loading" class="loading">
+        <p class="eyebrow">Summoning the chamber</p>
+        <h2>Loading ritual assets…</h2>
+        <div class="loading-bar"><span></span></div>
+      </div>
+
       <div id="lobby" class="panel">
         <div class="panel-inner wide">
           <p class="eyebrow">Even in Arcadia, there exis—</p>
@@ -73,7 +79,11 @@
         <div class="hud-center">
           <span id="turn-label" class="turn"></span>
           <span id="status-label" class="status-line"></span>
-          <span id="camera-hint" class="camera-hint">Drag to orbit the board · Scroll to zoom</span>
+          <span id="camera-hint" class="camera-hint">Click pieces to move · Ctrl + drag to orbit · Scroll to zoom</span>
+        </div>
+        <div class="hud-audio">
+          <button type="button" id="btn-mute" class="btn ghost small">Mute</button>
+          <input id="volume-slider" type="range" min="0" max="100" value="45" aria-label="Volume" />
         </div>
         <div class="hud-right">
           <div class="player-chip dorian" id="chip-dorian">

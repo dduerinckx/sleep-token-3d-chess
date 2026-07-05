@@ -1,6 +1,7 @@
 import type { Color } from "chess.js";
 import type { PlayerId } from "../theme/players";
 import { emptyMoveStats, type MoveQuality, type SessionMoveStats } from "./MoveAnalyzer";
+import { fetchCloudStats, saveCloudStats } from "../lib/cloudStats";
 
 export type CareerStats = {
   wins: number;
@@ -59,6 +60,24 @@ export class StatsTracker {
     }
   }
 
+  async loadCareerCloud(player: PlayerId): Promise<CareerStats> {
+    const cloud = await fetchCloudStats(player);
+    const local = this.loadCareer(player);
+    if (!cloud) return local;
+    const merged: CareerStats = {
+      wins: Math.max(local.wins, cloud.wins),
+      losses: Math.max(local.losses, cloud.losses),
+      draws: Math.max(local.draws, cloud.draws),
+      gamesPlayed: Math.max(local.gamesPlayed, cloud.gamesPlayed),
+      killerMoves: Math.max(local.killerMoves, cloud.killerMoves),
+      goodMoves: Math.max(local.goodMoves, cloud.goodMoves),
+      badMoves: Math.max(local.badMoves, cloud.badMoves),
+      fuckUps: Math.max(local.fuckUps, cloud.fuckUps),
+    };
+    this.saveCareer(player, merged);
+    return merged;
+  }
+
   saveCareer(player: PlayerId, stats: CareerStats): void {
     const raw = localStorage.getItem(STORAGE_KEY);
     const all: Partial<Record<PlayerId, CareerStats>> = raw ? JSON.parse(raw) : {};
@@ -66,7 +85,7 @@ export class StatsTracker {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   }
 
-  finalizeGame(winner: Color | null): { kimberly: CareerStats; dorian: CareerStats } {
+  async finalizeGame(winner: Color | null): Promise<{ kimberly: CareerStats; dorian: CareerStats }> {
     const kCareer = this.loadCareer("kimberly");
     const dCareer = this.loadCareer("dorian");
 
@@ -94,6 +113,7 @@ export class StatsTracker {
 
     this.saveCareer("kimberly", kCareer);
     this.saveCareer("dorian", dCareer);
+    await Promise.all([saveCloudStats("kimberly", kCareer), saveCloudStats("dorian", dCareer)]);
     return { kimberly: kCareer, dorian: dCareer };
   }
 }

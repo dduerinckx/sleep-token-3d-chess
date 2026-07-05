@@ -451,6 +451,59 @@ input::placeholder {
   color: rgba(232, 224, 244, 0.38);
 }
 
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  gap: 1rem;
+  background: rgba(6, 4, 12, 0.92);
+  backdrop-filter: blur(8px);
+}
+
+.loading h2 {
+  font-family: "Cinzel", serif;
+  color: var(--gold);
+  letter-spacing: 0.12em;
+}
+
+.loading-bar {
+  width: min(280px, 70vw);
+  height: 4px;
+  margin: 0 auto;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.loading-bar span {
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--glow), var(--gold));
+  animation: loadpulse 1.2s ease-in-out infinite;
+}
+
+@keyframes loadpulse {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
+}
+
+.hud-audio {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  pointer-events: auto;
+}
+
+#volume-slider {
+  width: 88px;
+  accent-color: var(--gold);
+  cursor: pointer;
+}
+
 .modal-inner.wide {
   width: min(480px, 92vw);
 }
